@@ -13,8 +13,6 @@
     NSMutableArray *imageArr;
 }
 
-@property (nonatomic, strong) UIImageView * headerView;
-
 @property (nonatomic, strong) UITableView * settingView;
 
 @property (nonatomic,strong) UIScrollView *scrollView;
@@ -35,11 +33,11 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     imageArr = [[NSMutableArray alloc]init];
-    [imageArr addObject:@"erha6"];
+    [imageArr addObject:@"erhafuben6"];
     for (int i = 0; i<7; i++) {
         [imageArr addObject:[NSString stringWithFormat:@"erha%d",i]];
     }
-    [imageArr addObject:@"erha0"];
+    [imageArr addObject:@"erhafuben0"];
 
     [self createSettingView];
     [self createScrollView];
@@ -86,9 +84,13 @@
 }
 
 -(void)changeImage{
-    
+    autoScroll = YES;
+    CGFloat page = _scrollView.contentOffset.x/screen_width;
+
     [UIView animateWithDuration:1.0 animations:^{
-        _scrollView.contentOffset = CGPointMake(_scrollView.contentOffset.x + screen_width, 0);
+        if (page<imageArr.count-1){
+            _scrollView.contentOffset = CGPointMake(_scrollView.contentOffset.x + screen_width, 0);
+        }
     } completion:^(BOOL finished) {
         if (_scrollView.contentOffset.x > screen_width*(imageArr.count-2)){
             [_scrollView setContentOffset:CGPointMake(screen_width, 0)];
@@ -99,6 +101,8 @@
 
 -(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
     [_timer invalidate];
+    openScroll = YES;
+    autoScroll = NO;
 }
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
@@ -107,6 +111,8 @@
 
     
 }
+
+
 
 #pragma mark - < UITableViewDatasource >
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -126,6 +132,9 @@
 }
 
 
+bool openScroll = NO;
+bool autoScroll = YES;
+
 static int count = 0;
 
 #pragma mark - < UITableViewDelegate >
@@ -133,13 +142,30 @@ static int count = 0;
     
     if (![scrollView isKindOfClass:[UITableView class]]) {
         
-        NSInteger page = scrollView.contentOffset.x/screen_width;
+        if (autoScroll){
+            CGFloat page = scrollView.contentOffset.x/screen_width;
+            NSInteger currentPage = roundf(page);
+            _pageControl.currentPage =  currentPage > imageArr.count-2?0:currentPage-1;
+        }
+        else {
+            CGFloat page = scrollView.contentOffset.x/screen_width;
+            NSInteger currentPage = roundf(page);
+            _pageControl.currentPage =  currentPage > imageArr.count-2?0:currentPage-1;
+            
+            if (page>=imageArr.count-1 && openScroll){
+                openScroll = !openScroll;
+                scrollView.contentOffset = CGPointMake(screen_width, 0);
+                NSLog(@"%ld,%f",currentPage,page);
 
-
-      _pageControl.currentPage =  page > imageArr.count-2?0:page-1;
-        NSLog(@"%ld",page);
-
+            }
+            else if (page<=1 && openScroll){
+                openScroll = !openScroll;
+                
+                [scrollView setContentOffset:CGPointMake(screen_width*(imageArr.count-1), 0)];
+            }
+        }
         return;
+
     }
     
     if (count<3){
@@ -166,28 +192,6 @@ static int count = 0;
     
 }
 
-
-
--(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
-    if ([scrollView isKindOfClass:[UITableView class]]) return;
-    
-    CGFloat page = scrollView.contentOffset.x/screen_width;
-    NSInteger currentPage = page;
-    if (page<1){
-        [scrollView setContentOffset:CGPointMake(screen_width*(imageArr.count-2), 0)];
-        
-        _pageControl.currentPage = imageArr.count-2;
-    }
-    else if (page>imageArr.count-2){
-        [scrollView setContentOffset:CGPointMake(screen_width, 0)];
-        
-        _pageControl.currentPage = 0;
-    }
-    
-    else {
-        _pageControl.currentPage = currentPage - 1;
-    }
-}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
